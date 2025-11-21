@@ -25,10 +25,27 @@ class JobListingController extends Controller
             'urgent' => 'nullable|boolean',
         ]);
 
-        $job = JobListing::create(array_merge($payload, [
+        $user = $request->user();
+
+        $extra = [
             'status' => 'open',
             'posted_at' => now(),
-        ]));
+        ];
+
+        // If the authenticated user is HR, associate the job with their company
+        if ($user && ($user->role ?? '') === 'barangay_official') {
+            // keep existing barangay_official role behavior (allowed)
+        }
+
+        // If user owns an HrCompany, attach it
+        if ($user) {
+            $hr = \App\Models\HrCompany::where('user_id', $user->id)->first();
+            if ($hr) {
+                $extra['hr_company_id'] = $hr->id;
+            }
+        }
+
+        $job = JobListing::create(array_merge($payload, $extra));
 
         return response()->json(['status' => 'success', 'data' => $job], 201);
     }

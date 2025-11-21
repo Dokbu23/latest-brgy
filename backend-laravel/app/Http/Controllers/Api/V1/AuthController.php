@@ -7,6 +7,7 @@ use App\Http\Requests\Api\V1\LoginUserRequest;
 use App\Http\Requests\Api\V1\RegisterUserRequest;
 use App\Http\Requests\Api\V1\RegisterResidentRequest;
 use App\Models\User;
+use App\Models\HrCompany;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,6 +30,7 @@ class AuthController extends Controller
         // Regenerate session for security
         $request->session()->regenerate();
 
+        $hr = HrCompany::where('user_id', $user->id)->first();
         return $this->ok('Login successful', [
             'user' => [
                 'id' => $user->id,
@@ -38,6 +40,7 @@ class AuthController extends Controller
                 'barangay' => $user->barangay,
                 'phone' => $user->phone,
                 'address' => $user->address,
+                'hr_company' => $hr ? ['id' => $hr->id, 'name' => $hr->name, 'verified' => (bool)$hr->verified] : null,
             ]
         ]);
     }
@@ -97,6 +100,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
+        $hr = HrCompany::where('user_id', $user->id)->first();
         return $this->ok('Resident registration successful', [
             'user' => [
                 'id' => $user->id,
@@ -106,6 +110,7 @@ class AuthController extends Controller
                 'barangay' => $user->barangay,
                 'phone' => $user->phone,
                 'address' => $user->address,
+                'hr_company' => $hr ? ['id' => $hr->id, 'name' => $hr->name, 'verified' => (bool)$hr->verified] : null,
             ]
         ]);
     }
@@ -127,6 +132,7 @@ class AuthController extends Controller
             return $this->error('Not authenticated', 401);
         }
 
+        $hr = HrCompany::where('user_id', $user->id)->first();
         return $this->ok('User data', [
             'user' => [
                 'id' => $user->id,
@@ -137,6 +143,7 @@ class AuthController extends Controller
                 'phone' => $user->phone,
                 'address' => $user->address,
                 'birthdate' => $user->birthdate,
+                'hr_company' => $hr ? ['id' => $hr->id, 'name' => $hr->name, 'verified' => (bool)$hr->verified] : null,
             ]
         ]);
     }
@@ -178,6 +185,45 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'role' => $user->role,
                 'barangay' => $user->barangay,
+            ]
+        ]);
+    }
+
+    /**
+     * Admin-only: create a Secretary account (role 'secretary').
+     */
+    public function createSecretary(Request $request)
+    {
+        $authUser = $request->user();
+        if (!$authUser || ($authUser->role ?? '') !== 'admin') {
+            return $this->error('Forbidden: insufficient permissions', 403);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'barangay' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'address' => 'nullable|string',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => 'secretary',
+            'barangay' => $validated['barangay'] ?? null,
+            'phone' => $validated['phone'] ?? null,
+            'address' => $validated['address'] ?? null,
+        ]);
+
+        return $this->ok('Secretary account created', [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
             ]
         ]);
     }

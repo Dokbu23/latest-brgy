@@ -21,7 +21,7 @@ class RegisterResidentRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
@@ -31,5 +31,14 @@ class RegisterResidentRequest extends FormRequest
             'address' => 'nullable|string|max:500',
             'birthdate' => 'nullable|date',
         ];
+
+        // If BARANGAY_ALLOWED env is set, validate that the provided barangay is in the allowed list
+        $allowed = env('BARANGAY_ALLOWED');
+        if ($allowed) {
+            $list = array_map('trim', explode(',', $allowed));
+            $rules['barangay'] = ['required', 'string', 'max:255', \Illuminate\Validation\Rule::in($list)];
+        }
+
+        return $rules;
     }
 }
