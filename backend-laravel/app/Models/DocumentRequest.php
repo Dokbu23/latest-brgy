@@ -16,6 +16,7 @@ class DocumentRequest extends Model
         'type',
         'notes',
         'status',
+        'urgency',
         'assigned_to',
         'processed_at',
     ];

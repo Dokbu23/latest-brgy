@@ -11,6 +11,10 @@ class JobApplication extends Model
         'job_listing_id',
         'cover_letter',
         'status',
+        'interview_date',
+        'interview_time',
+        'interview_location',
+        'interview_notes',
     ];
 
     public function user()

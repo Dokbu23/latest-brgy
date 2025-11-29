@@ -10,7 +10,7 @@ class JobListing extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title', 'company', 'type', 'salary', 'description', 'urgent', 'status', 'posted_at', 'hr_company_id'
+        'title', 'company', 'type', 'salary', 'description', 'urgent', 'status', 'posted_at', 'hr_company_id', 'needed_applicants', 'location', 'employment_type', 'requirements', 'posted_by'
     ];
 
     protected $casts = [

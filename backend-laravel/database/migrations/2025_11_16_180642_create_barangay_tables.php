@@ -48,29 +48,12 @@ class CreateBarangayTables extends Migration
             $table->enum('proficiency', ['beginner', 'intermediate', 'advanced', 'expert']);
             $table->timestamps();
         });
-
-        // Job listings table
-        Schema::create('job_listings', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
-            $table->text('description');
-            $table->string('company');
-            $table->string('location');
-            $table->string('employment_type');
-            $table->decimal('salary_min', 10, 2)->nullable();
-            $table->decimal('salary_max', 10, 2)->nullable();
-            $table->text('requirements');
-            $table->boolean('is_active')->default(true);
-            $table->foreignId('posted_by')->constrained('users')->onDelete('cascade');
-            $table->timestamps();
-        });
     }
 
     public function down()
     {
         Schema::dropIfExists('user_skills');
         Schema::dropIfExists('employment_records');
-        Schema::dropIfExists('job_listings');
         Schema::dropIfExists('skills');
         
         Schema::table('users', function (Blueprint $table) {

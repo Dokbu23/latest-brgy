@@ -21,7 +21,8 @@ class DocumentRequestStatusChanged extends Notification
 
     public function via($notifiable)
     {
-        return ['mail', 'database'];
+        // Use mail channel here; database storage is handled explicitly via the Notification model
+        return ['mail'];
     }
 
     public function toMail($notifiable)

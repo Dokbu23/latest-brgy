@@ -21,7 +21,10 @@ return [
 
     'allowed_methods' => ['*'], //HTTP Methods
 
-    'allowed_origins' => [env('FRONTEND_URL')], //Frontend URL
+    'allowed_origins' => array_filter([
+        env('FRONTEND_URL', 'http://localhost:5173'),
+        env('FRONTEND_ALT_URL', 'http://127.0.0.1:5173'),
+    ]), // Frontend URLs
 
     'allowed_origins_patterns' => [],
 

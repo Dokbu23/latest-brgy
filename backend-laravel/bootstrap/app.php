@@ -20,10 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Enable stateful API authentication (for Sanctum sessions/cookies)
         $middleware->statefulApi();
         
-        // Exclude API login/register from CSRF verification
+        // Exclude API routes from CSRF verification
         $middleware->validateCsrfTokens(except: [
-            'api/login',
-            'api/register',
+            'api/*',
             'sanctum/csrf-cookie',
         ]);
     })

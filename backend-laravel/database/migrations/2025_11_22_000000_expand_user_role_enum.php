@@ -14,7 +14,7 @@ class ExpandUserRoleEnum extends Migration
     {
         // Add additional roles used by the application
         // Using raw statement to alter enum safely across MySQL versions
-        DB::statement("ALTER TABLE `users` MODIFY `role` ENUM('admin','barangay_official','resident','secretary','hr_manager','hr') NOT NULL DEFAULT 'resident';");
+        DB::statement("ALTER TABLE `users` MODIFY `role` ENUM('admin','barangay_official','resident','secretary','hr') NOT NULL DEFAULT 'resident';");
     }
 
     /**
@@ -22,7 +22,7 @@ class ExpandUserRoleEnum extends Migration
      */
     public function down(): void
     {
-        // Revert to original enum (remove secretary, hr_manager, hr)
-        DB::statement("ALTER TABLE `users` MODIFY `role` ENUM('admin','barangay_official','resident') NOT NULL DEFAULT 'resident';");
+        // Keep the expanded enum to avoid data loss during rollback
+        DB::statement("ALTER TABLE `users` MODIFY `role` ENUM('admin','barangay_official','resident','secretary','hr') NOT NULL DEFAULT 'resident';");
     }
 }

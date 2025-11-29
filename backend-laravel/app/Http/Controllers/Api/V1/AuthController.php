@@ -12,6 +12,8 @@ use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 
 class AuthController extends Controller
 {
@@ -27,8 +29,7 @@ class AuthController extends Controller
 
         $user = Auth::user();
         
-        // Regenerate session for security
-        $request->session()->regenerate();
+        $token = $user->createToken('api-token')->plainTextToken;
 
         $hr = HrCompany::where('user_id', $user->id)->first();
         return $this->ok('Login successful', [
@@ -40,8 +41,10 @@ class AuthController extends Controller
                 'barangay' => $user->barangay,
                 'phone' => $user->phone,
                 'address' => $user->address,
+                'avatar' => $user->avatar ?? null,
                 'hr_company' => $hr ? ['id' => $hr->id, 'name' => $hr->name, 'verified' => (bool)$hr->verified] : null,
-            ]
+            ],
+            'token' => $token,
         ]);
     }
 
@@ -61,9 +64,7 @@ class AuthController extends Controller
             'birthdate' => $data['birthdate'] ?? null,
         ]);
 
-        // Auto-login after registration
-        Auth::login($user);
-        $request->session()->regenerate();
+        $token = $user->createToken('api-token')->plainTextToken;
 
         return $this->ok('Registration successful', [
             'user' => [
@@ -74,7 +75,9 @@ class AuthController extends Controller
                 'barangay' => $user->barangay,
                 'phone' => $user->phone,
                 'address' => $user->address,
-            ]
+                'avatar' => $user->avatar ?? null,
+            ],
+            'token' => $token,
         ]);
     }
 
@@ -96,9 +99,7 @@ class AuthController extends Controller
             'birthdate' => $data['birthdate'] ?? null,
         ]);
 
-        // Auto-login after registration
-        Auth::login($user);
-        $request->session()->regenerate();
+        $token = $user->createToken('api-token')->plainTextToken;
 
         $hr = HrCompany::where('user_id', $user->id)->first();
         return $this->ok('Resident registration successful', [
@@ -110,16 +111,16 @@ class AuthController extends Controller
                 'barangay' => $user->barangay,
                 'phone' => $user->phone,
                 'address' => $user->address,
+                'avatar' => $user->avatar ?? null,
                 'hr_company' => $hr ? ['id' => $hr->id, 'name' => $hr->name, 'verified' => (bool)$hr->verified] : null,
-            ]
+            ],
+            'token' => $token,
         ]);
     }
 
     public function logout(Request $request)
     {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $request->user()->tokens()->delete();
 
         return $this->ok('Logged out successfully');
     }
@@ -143,6 +144,85 @@ class AuthController extends Controller
                 'phone' => $user->phone,
                 'address' => $user->address,
                 'birthdate' => $user->birthdate,
+                'avatar' => $user->avatar ?? null,
+                'hr_company' => $hr ? ['id' => $hr->id, 'name' => $hr->name, 'verified' => (bool)$hr->verified] : null,
+            ]
+        ]);
+    }
+
+    /**
+     * Upload avatar for authenticated user.
+     */
+    public function uploadAvatar(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return $this->error('Not authenticated', 401);
+        }
+
+        $validated = $request->validate([
+            'avatar' => 'required|image|max:2048',
+        ]);
+
+        /** @var UploadedFile $file */
+        $file = $request->file('avatar');
+        $path = $file->store('avatars', 'public');
+
+        // Build accessible URL
+        $url = Storage::url($path);
+
+        // Save to user and return
+        $user->avatar = $url;
+        $user->save();
+
+        return $this->ok('Avatar uploaded', [
+            'avatar_url' => $url,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'barangay' => $user->barangay,
+                'phone' => $user->phone,
+                'address' => $user->address,
+                'avatar' => $user->avatar,
+            ]
+        ]);
+    }
+
+    /**
+     * Update authenticated user's profile.
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return $this->error('Not authenticated', 401);
+        }
+
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'barangay' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'address' => 'nullable|string',
+            'birthdate' => 'nullable|date',
+        ]);
+
+        $user->fill($validated);
+        $user->save();
+
+        $hr = HrCompany::where('user_id', $user->id)->first();
+        return $this->ok('Profile updated', [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role ?? 'resident',
+                'barangay' => $user->barangay,
+                'phone' => $user->phone,
+                'address' => $user->address,
+                'birthdate' => $user->birthdate,
+                'avatar' => $user->avatar ?? null,
                 'hr_company' => $hr ? ['id' => $hr->id, 'name' => $hr->name, 'verified' => (bool)$hr->verified] : null,
             ]
         ]);
@@ -172,7 +252,7 @@ class AuthController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => 'hr_manager',
+            'role' => 'hr',
             'barangay' => $validated['barangay'] ?? null,
             'phone' => $validated['phone'] ?? null,
             'address' => $validated['address'] ?? null,
@@ -185,6 +265,7 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'role' => $user->role,
                 'barangay' => $user->barangay,
+                'avatar' => $user->avatar ?? null,
             ]
         ]);
     }
@@ -224,7 +305,79 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'avatar' => $user->avatar ?? null,
             ]
         ]);
+    }
+
+    /**
+     * Admin-only: get all accounts (residents, secretaries, HR managers, admins).
+     */
+    public function allAccounts(Request $request)
+    {
+        $authUser = $request->user();
+        if (!$authUser || ($authUser->role ?? '') !== 'admin') {
+            return $this->error('Forbidden: insufficient permissions', 403);
+        }
+
+        $users = User::select('id', 'name', 'email', 'role', 'phone', 'barangay', 'created_at')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return $this->ok('All accounts', $users);
+    }
+
+    /**
+     * Admin-only: update an account (name, role, phone, barangay, etc.).
+     */
+    public function updateAccount(Request $request, $id)
+    {
+        $authUser = $request->user();
+        if (!$authUser || ($authUser->role ?? '') !== 'admin') {
+            return $this->error('Forbidden: insufficient permissions', 403);
+        }
+
+        $user = User::find($id);
+        if (!$user) {
+            return $this->error('User not found', 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'role' => 'sometimes|in:resident,secretary,hr,admin',
+            'phone' => 'sometimes|nullable|string|max:50',
+            'barangay' => 'sometimes|nullable|string|max:255',
+            'address' => 'sometimes|nullable|string',
+        ]);
+
+        $user->fill($validated);
+        $user->save();
+
+        return $this->ok('Account updated', $user);
+    }
+
+    /**
+     * Admin-only: delete an account.
+     */
+    public function deleteAccount(Request $request, $id)
+    {
+        $authUser = $request->user();
+        if (!$authUser || ($authUser->role ?? '') !== 'admin') {
+            return $this->error('Forbidden: insufficient permissions', 403);
+        }
+
+        $user = User::find($id);
+        if (!$user) {
+            return $this->error('User not found', 404);
+        }
+
+        // Prevent deleting the authenticated admin
+        if ($user->id === $authUser->id) {
+            return $this->error('Cannot delete your own account', 400);
+        }
+
+        $user->delete();
+
+        return $this->ok('Account deleted');
     }
 }
