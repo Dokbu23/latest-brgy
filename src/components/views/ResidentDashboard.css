@@ -1,0 +1,14 @@
+/* Styles specific to Resident Dashboard view */
+
+/* Ensure cards inside resident view have consistent spacing */
+.card { margin-bottom: 12px }
+
+.stat-item { display:flex; flex-direction:column; padding:8px; border-radius:8px; background:transparent }
+.stat-label { color:var(--muted); font-size:12px }
+.stat-value { font-weight:700; color:var(--text); font-size:14px }
+
+.qa-button { text-decoration:none; color:white; border-radius:10px; display:inline-flex; align-items:center; justify-content:center }
+
+@media (max-width: 900px) {
+  .resident-grid { display:flex; flex-direction:column }
+}
