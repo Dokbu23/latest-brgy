@@ -1,19 +1,12 @@
 // Enhanced Dashboard.jsx
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import axios from '../api/setupAxios'
 import './Dashboard.css'
 
 // Dashboard Components
-import StatsOverview from './dashboard/StatsOverview'
-import RecentActivities from './dashboard/RecentActivities'
-import EmploymentChart from './dashboard/EmploymentChart'
-import SkillsDistribution from './dashboard/SkillsDistribution'
-import QuickActions from './dashboard/QuickActions'
-import JobListingsPreview from './dashboard/JobListingsPreview'
 
 const Dashboard = ({ user, setUser }) => {
   const [dashboardData, setDashboardData] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
 
   // Update time every minute
@@ -30,20 +23,8 @@ const Dashboard = ({ user, setUser }) => {
     fetchDashboardData()
   }, [])
 
-  // When a job is posted via QuickActions, prepend it to recentJobs and mark as new
-  const handleJobPosted = (job) => {
-    const marked = { ...job, isNew: true }
-    setDashboardData((prev) => {
-      const existing = prev?.recentJobs || []
-      return { ...(prev || {}), recentJobs: [marked, ...existing] }
-    })
-  }
-
   const fetchDashboardData = async () => {
     try {
-      setLoading(true)
-      // Simulate API delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 800))
       const response = await axios.get('/api/dashboard/statistics')
       if (response.data && response.data.data) {
         setDashboardData(response.data.data)
@@ -53,24 +34,10 @@ const Dashboard = ({ user, setUser }) => {
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
       setDashboardData(null)
-    } finally {
-      setLoading(false)
     }
   }
 
-  if (loading) {
-    return (
-      <div className="dashboard-container">
-        <div className="dashboard-loading">
-          <div className="loading-spinner large"></div>
-          <p>Loading Barangay Dashboard...</p>
-          <span style={{fontSize: '14px', color: '#a0aec0', marginTop: '8px'}}>
-            Preparing your community insights
-          </span>
-        </div>
-      </div>
-    )
-  }
+  // Removed dashboard loading placeholder — render UI immediately (components will handle empty data)
 
   return (
     <div className="dashboard-container">
@@ -81,11 +48,11 @@ const Dashboard = ({ user, setUser }) => {
             <div className="welcome-section">
               <h1>
                 Good {getTimeOfDay()}, {safeUser.name}!
-                <span className="welcome-emoji">{getWelcomeEmoji()}</span>
+              
               </h1>
               <p className="welcome-subtitle">
-                Welcome to Barangay {safeUser.barangay} Monitoring Portal
-                {safeUser.role === 'hr_manager' && ' • HR Manager'}
+                Welcome to B. Del Mundo Monitoring Portal
+
                 {safeUser.role === 'admin' && ' • Administrator Panel'}
               </p>
             </div>
@@ -109,32 +76,137 @@ const Dashboard = ({ user, setUser }) => {
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <StatsOverview stats={dashboardData?.statistics} user={safeUser} />
-
         {/* Enhanced Main Content Grid */}
         <div className="dashboard-content">
-          {/* Left Column - Charts and Data Visualization */}
-          <div className="content-left">
-            <EmploymentChart data={dashboardData?.employmentStats} />
-            <SkillsDistribution data={dashboardData?.skillsData} />
+          {/* System Overview Statistics */}
+          <div className="overview-section">
+            <h2 className="section-title">📊 System Overview</h2>
+            <div className="stats-grid">
+              <div className="stat-card residents">
+                <div className="stat-icon">👥</div>
+                <div className="stat-info">
+                  <div className="stat-value">{dashboardData?.statistics?.totalResidents || 0}</div>
+                  <div className="stat-label">Total Users</div>
+                </div>
+              </div>
+              
+              <div className="stat-card jobs">
+                <div className="stat-icon">💼</div>
+                <div className="stat-info">
+                  <div className="stat-value">{dashboardData?.statistics?.activeJobs || 0}</div>
+                  <div className="stat-label">Active Jobs</div>
+                </div>
+              </div>
+              
+              <div className="stat-card skills">
+                <div className="stat-icon">🎯</div>
+                <div className="stat-info">
+                  <div className="stat-value">{dashboardData?.statistics?.registeredSkills || 0}</div>
+                  <div className="stat-label">Registered Skills</div>
+                </div>
+              </div>
+              
+              <div className="stat-card documents">
+                <div className="stat-icon">📄</div>
+                <div className="stat-info">
+                  <div className="stat-value">{dashboardData?.statistics?.pendingApplications || 0}</div>
+                  <div className="stat-label">Applications</div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Right Column - Actions and Updates */}
-          <div className="content-right">
-            <QuickActions 
-              onRegistered={(u) => setUser && setUser(u)} 
-              onRefresh={fetchDashboardData}
-              onJobPosted={handleJobPosted}
-            />
-            <RecentActivities activities={dashboardData?.recentActivities} />
-            <JobListingsPreview jobs={dashboardData?.recentJobs} onClearNew={() => {
-              setDashboardData((prev) => {
-                if (!prev) return prev
-                const list = (prev.recentJobs || []).map(j => ({ ...j, isNew: false }))
-                return { ...prev, recentJobs: list }
-              })
-            }} />
+          {/* Recent Jobs Section */}
+          {dashboardData?.recentJobs && dashboardData.recentJobs.length > 0 && (
+            <div className="recent-section">
+              <h2 className="section-title">💼 Recent Job Postings</h2>
+              <div className="jobs-grid">
+                {dashboardData.recentJobs.map(job => (
+                  <div key={job.id} className="job-card-mini">
+                    <div className="job-header-mini">
+                      <h3 className="job-title-mini">{job.title}</h3>
+                      <span className={`job-status-badge ${job.status}`}>
+                        {job.status}
+                      </span>
+                    </div>
+                    <div className="job-details-mini">
+                      <span className="company">🏢 {job.company}</span>
+                      <span className="location">📍 {job.location || 'Not specified'}</span>
+                      <span className="type">⏰ {job.type}</span>
+                    </div>
+                    {job.salary && (
+                      <div className="job-salary">💰 {job.salary}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Skills Section */}
+          {dashboardData?.skillsData && dashboardData.skillsData.length > 0 && (
+            <div className="skills-section">
+              <h2 className="section-title">🎯 Top Skills in Community</h2>
+              <div className="skills-list">
+                {dashboardData.skillsData.slice(0, 10).map((skillData, index) => (
+                  <div key={index} className="skill-item-dashboard">
+                    <div className="skill-rank">#{index + 1}</div>
+                    <div className="skill-name">{skillData.skill}</div>
+                    <div className="skill-count">
+                      <span className="count-badge">{skillData.count}</span>
+                      <span className="count-label">residents</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions */}
+          <div className="quick-actions-section">
+            <h2 className="section-title">⚡ Quick Actions</h2>
+            <div className="actions-grid">
+              {safeUser.role === 'admin' && (
+                <>
+                  <button className="action-btn admin-btn">
+                    <span className="action-icon">👥</span>
+                    <span className="action-text">Manage Users</span>
+                  </button>
+                  <button className="action-btn admin-btn">
+                    <span className="action-icon">📊</span>
+                    <span className="action-text">View Reports</span>
+                  </button>
+                </>
+              )}
+              {(safeUser.role === 'hr_manager' || safeUser.role === 'hr') && (
+                <>
+                  <button className="action-btn hr-btn">
+                    <span className="action-icon">💼</span>
+                    <span className="action-text">Post New Job</span>
+                  </button>
+                  <button className="action-btn hr-btn">
+                    <span className="action-icon">📋</span>
+                    <span className="action-text">View Applicants</span>
+                  </button>
+                </>
+              )}
+              {safeUser.role === 'resident' && (
+                <>
+                  <button className="action-btn resident-btn">
+                    <span className="action-icon">🔍</span>
+                    <span className="action-text">Browse Jobs</span>
+                  </button>
+                  <button className="action-btn resident-btn">
+                    <span className="action-icon">📝</span>
+                    <span className="action-text">Update Profile</span>
+                  </button>
+                </>
+              )}
+              <button className="action-btn refresh-btn" onClick={fetchDashboardData}>
+                <span className="action-icon">🔄</span>
+                <span className="action-text">Refresh Data</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -151,12 +223,5 @@ function getTimeOfDay() {
   return 'Evening'
 }
 
-function getWelcomeEmoji() {
-  const hour = new Date().getHours()
-  if (hour < 5) return '🌙'
-  if (hour < 12) return '🌅'
-  if (hour < 17) return '🌞'
-  return '🌇'
-}
 
 export default Dashboard

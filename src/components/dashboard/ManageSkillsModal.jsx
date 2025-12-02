@@ -1,11 +1,10 @@
+// ManageSkillsModal.jsx - Redesigned
 import { useEffect, useState } from 'react'
-import axios from 'axios'
-import './RegisterResidentModal.css'
+import axios from '../../api/setupAxios'
 
 const ManageSkillsModal = ({ isOpen, onClose, onUpdated }) => {
   const [skills, setSkills] = useState([])
   const [newSkill, setNewSkill] = useState('')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -23,7 +22,6 @@ const ManageSkillsModal = ({ isOpen, onClose, onUpdated }) => {
 
   const handleAdd = async () => {
     if (!newSkill.trim()) return
-    setLoading(true)
     try {
       await axios.get('/sanctum/csrf-cookie')
       const res = await axios.post('/api/skills', { skill: newSkill })
@@ -32,13 +30,10 @@ const ManageSkillsModal = ({ isOpen, onClose, onUpdated }) => {
       onUpdated && onUpdated()
     } catch (err) {
       setError('Failed to add skill')
-    } finally {
-      setLoading(false)
     }
   }
 
   const handleDelete = async (id) => {
-    setLoading(true)
     try {
       await axios.get('/sanctum/csrf-cookie')
       await axios.delete(`/api/skills/${id}`)
@@ -46,46 +41,72 @@ const ManageSkillsModal = ({ isOpen, onClose, onUpdated }) => {
       onUpdated && onUpdated()
     } catch (err) {
       setError('Failed to delete skill')
-    } finally {
-      setLoading(false)
     }
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="rrm-backdrop">
-      <div className="rrm-modal">
-        <div className="rrm-header">
-          <h3>Manage Skills</h3>
-          <button className="rrm-close" onClick={onClose}>×</button>
+    <div className="modern-modal-overlay">
+      <div className="modern-modal medium">
+        <div className="modal-header">
+          <h3 className="modal-title">Manage Skills Catalog</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
-        {error && <div className="rrm-error">{error}</div>}
+        {error && <div className="modern-message error">{error}</div>}
 
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="New skill name" style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-            <button className="rrm-btn rrm-btn-primary" onClick={handleAdd} disabled={loading}>Add</button>
+        <div className="modal-content">
+          <div className="add-skill-form">
+            <input 
+              value={newSkill} 
+              onChange={(e) => setNewSkill(e.target.value)} 
+              placeholder="Enter new skill name..."
+              className="modern-input"
+              onKeyPress={(e) => e.key === 'Enter' && handleAdd()}
+            />
+            <button 
+              className="modern-button primary" 
+              onClick={handleAdd} 
+              disabled={loading || !newSkill.trim()}
+            >
+              Add Skill
+            </button>
+          </div>
+
+          <div className="skills-list">
+            <h4 className="section-title">Current Skills</h4>
+            {skills.length > 0 ? (
+              <div className="skills-grid">
+                {skills.map((skill) => (
+                  <div key={skill.id} className="skill-item">
+                    <div className="skill-info">
+                      <span className="skill-name">{skill.skill}</span>
+                      <span className="skill-count">{skill.count ?? 0} residents</span>
+                    </div>
+                    <button 
+                      className="modern-button danger small" 
+                      onClick={() => handleDelete(skill.id)} 
+                      disabled={loading}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <p>No skills added yet</p>
+                <p className="empty-subtitle">Add skills to build the catalog</p>
+              </div>
+            )}
           </div>
         </div>
 
-        <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-          {skills.map((s) => (
-            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-              <div>
-                <div style={{ fontWeight: 600, color: '#2d3748' }}>{s.skill}</div>
-                <div style={{ color: '#718096', fontSize: 12 }}>{s.count ?? 0} registered</div>
-              </div>
-              <div>
-                <button className="rrm-btn rrm-btn-secondary" onClick={() => handleDelete(s.id)} disabled={loading}>Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-          <button className="rrm-btn rrm-btn-secondary" onClick={onClose}>Close</button>
+        <div className="modal-actions">
+          <button className="modern-button secondary" onClick={onClose}>
+            Close
+          </button>
         </div>
       </div>
     </div>

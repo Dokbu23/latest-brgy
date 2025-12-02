@@ -1,15 +1,3 @@
-//npm install axios
-import axios from 'axios';
+import axios from './setupAxios'
 
-const api = axios.create({
-  baseURL: 'http://localhost:8000',
-  headers: {
-    Accept: 
-    'application/json',
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true,
-  withXSRFToken: true,
-});
-
-export default api;
+export default axios

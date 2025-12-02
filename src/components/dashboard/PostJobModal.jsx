@@ -1,6 +1,6 @@
+// PostJobModal.jsx - Redesigned
 import { useState } from 'react'
-import axios from 'axios'
-import './RegisterResidentModal.css'
+import axios from '../../api/setupAxios'
 
 const PostJobModal = ({ isOpen, onClose, onPosted }) => {
   const [form, setForm] = useState({
@@ -9,6 +9,7 @@ const PostJobModal = ({ isOpen, onClose, onPosted }) => {
     type: '',
     salary: '',
     description: '',
+    requirements: '',
     urgent: false
   })
   const [loading, setLoading] = useState(false)
@@ -23,7 +24,6 @@ const PostJobModal = ({ isOpen, onClose, onPosted }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
     setError('')
 
     try {
@@ -39,45 +39,118 @@ const PostJobModal = ({ isOpen, onClose, onPosted }) => {
     } catch (err) {
       console.error(err)
       setError(err.response?.data?.message || 'Failed to post job')
-    } finally {
-      setLoading(false)
     }
   }
 
   return (
-    <div className="rrm-backdrop">
-      <div className="rrm-modal">
-        <div className="rrm-header">
-          <h3>Post Job</h3>
-          <button className="rrm-close" onClick={onClose}>×</button>
+    <div className="modern-modal-overlay">
+      <div className="modern-modal large">
+        <div className="modal-header">
+          <h3 className="modal-title">Post New Job Opportunity</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
-        {error && <div className="rrm-error">{error}</div>}
+        {error && <div className="modern-message error">{error}</div>}
 
-        <form className="rrm-form" onSubmit={handleSubmit}>
-          <div className="rrm-row">
-            <input name="title" placeholder="Job title" value={form.title} onChange={handleChange} required />
-            <input name="company" placeholder="Company" value={form.company} onChange={handleChange} required />
-          </div>
-
-          <div className="rrm-row">
-            <input name="type" placeholder="Type (Full-time/Part-time)" value={form.type} onChange={handleChange} />
-            <input name="salary" placeholder="Salary" value={form.salary} onChange={handleChange} />
-          </div>
-
-          <div className="rrm-row">
-            <textarea name="description" placeholder="Description" value={form.description} onChange={handleChange} style={{ flex: 1 }} />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input type="checkbox" name="urgent" checked={form.urgent} onChange={handleChange} />
-              Mark as urgent
-            </label>
-            <div className="rrm-actions">
-              <button type="button" className="rrm-btn rrm-btn-secondary" onClick={onClose} disabled={loading}>Cancel</button>
-              <button type="submit" className="rrm-btn rrm-btn-primary" disabled={loading}>{loading ? 'Posting...' : 'Post Job'}</button>
+        <form className="modal-form" onSubmit={handleSubmit}>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="modern-label">Job Title *</label>
+              <input 
+                name="title" 
+                placeholder="e.g. Administrative Assistant" 
+                value={form.title} 
+                onChange={handleChange} 
+                className="modern-input"
+                required 
+              />
             </div>
+
+            <div className="form-group">
+              <label className="modern-label">Company/Employer *</label>
+              <input 
+                name="company" 
+                placeholder="e.g. Barangay Hall" 
+                value={form.company} 
+                onChange={handleChange} 
+                className="modern-input"
+                required 
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="modern-label">Employment Type</label>
+              <select 
+                name="type" 
+                value={form.type} 
+                onChange={handleChange}
+                className="modern-select"
+              >
+                <option value="">Select type...</option>
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+                <option value="Contract">Contract</option>
+                <option value="Temporary">Temporary</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="modern-label">Salary Range</label>
+              <input 
+                name="salary" 
+                placeholder="e.g. ₱15,000 - ₱20,000/month" 
+                value={form.salary} 
+                onChange={handleChange} 
+                className="modern-input"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="modern-label">Job Description</label>
+            <textarea 
+              name="description" 
+              placeholder="Describe the job responsibilities and role..."
+              value={form.description} 
+              onChange={handleChange} 
+              rows={4}
+              className="modern-textarea"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="modern-label">Requirements</label>
+            <textarea 
+              name="requirements" 
+              placeholder="List any required qualifications or skills..."
+              value={form.requirements} 
+              onChange={handleChange} 
+              rows={3}
+              className="modern-textarea"
+            />
+          </div>
+
+          <div className="form-options">
+            <label className="checkbox-label">
+              <input 
+                type="checkbox" 
+                name="urgent" 
+                checked={form.urgent} 
+                onChange={handleChange} 
+                className="modern-checkbox"
+              />
+              <span className="checkmark"></span>
+              Mark as urgent hiring
+            </label>
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" className="modern-button secondary" onClick={onClose} disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" className="modern-button primary">
+              Post Job Opportunity
+            </button>
           </div>
         </form>
       </div>

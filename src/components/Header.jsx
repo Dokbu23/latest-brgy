@@ -6,8 +6,7 @@ const Header = ({ user, onLogout }) => {
     <header className="header">
       <div className="header-content">
         <div className="header-logo">
-          <div className="logo-icon">🏢</div>
-          <h2>Barangay Portal</h2>
+          <h2>B. Del Mundo Portal</h2>
         </div>
         
         <div className="user-menu">

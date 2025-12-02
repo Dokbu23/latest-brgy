@@ -1,6 +1,7 @@
 // src/App.jsx
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import axios from './api/setupAxios'
+import Swal from 'sweetalert2'
 import './App.css'
 
 // Components
@@ -8,11 +9,10 @@ import Login from './components/Login'
 import Dashboard from './components/Dashboard'
 import ResidentDashboard from './components/views/ResidentDashboard'
 import HRDashboard from './components/views/OfficialDashboard'
+import SecretaryDashboard from './components/views/SecretaryDashboard'
+import AdminDashboard from './components/views/admin/AdminDashboard'
 import Header from './components/Header'
-
-// Configure axios for cookies-based authentication
-axios.defaults.withCredentials = true
-axios.defaults.baseURL = 'http://localhost:8000'
+import BarangayCaptainDashboard from './components/views/BarangayCaptainDashboard'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -49,7 +49,17 @@ function App() {
 
   const handleLogout = async () => {
     try {
+      await axios.get('/sanctum/csrf-cookie')
       await axios.post('/api/logout')
+      // Show success message
+      Swal.fire({
+        icon: 'success',
+        title: 'Logged Out Successfully',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2500
+      })
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
@@ -58,25 +68,30 @@ function App() {
     }
   }
 
+  // Removed loading splash — render login/dashboard immediately
   if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading Barangay Portal...</p>
-      </div>
-    )
+    return <div />
   }
 
   return (
     <div className="app">
-      {user && <Header user={user} onLogout={handleLogout} />}
+      {user && user.role !== 'resident' && <Header user={user} onLogout={handleLogout} />}
       
       <main className="main-content">
         {view === 'login' && <Login onLogin={handleLogin} />}
         {view === 'dashboard' && user && (
-          user.role === 'resident' ? (
+          user.role === 'admin' ? (
+            <AdminDashboard user={user} setUser={setUser} />
+          ) : user.role === 'barangay_captain' ? (
+            <BarangayCaptainDashboard user={user} setUser={setUser} />
+          ) : user.hr_company ? (
+            // If user has an associated HR company, show HR dashboard
+            <HRDashboard user={user} setUser={setUser} />
+          ) : user.role === 'secretary' ? (
+            <SecretaryDashboard user={user} setUser={setUser} />
+          ) : user.role === 'resident' ? (
             <ResidentDashboard user={user} setUser={setUser} />
-          ) : user.role === 'hr_manager' ? (
+          ) : user.role === 'hr' || user.role === 'hr_manager' ? (
             <HRDashboard user={user} setUser={setUser} />
           ) : (
             <Dashboard user={user} setUser={setUser} />
