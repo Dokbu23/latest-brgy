@@ -57,4 +57,16 @@ class User extends Authenticatable
     {
         return $this->hasOne(HrCompany::class);
     }
+
+    public function employmentRecords()
+    {
+        return $this->hasMany(\App\Models\EmploymentRecord::class);
+    }
+
+    public function skills()
+    {
+        return $this->belongsToMany(Skill::class, 'user_skills')
+                    ->withPivot('proficiency')
+                    ->withTimestamps();
+    }
 }

@@ -72,14 +72,22 @@ class JobApplicationController extends Controller
 
         // allow if admin
         if (($user->role ?? '') === 'admin') {
-            $apps = JobApplication::where('job_listing_id', $job->id)->with('user')->get();
+            $apps = JobApplication::where('job_listing_id', $job->id)
+                ->with(['user' => function($query) {
+                    $query->select('id', 'name', 'email', 'phone', 'address', 'birthdate', 'avatar', 'barangay');
+                }, 'user.skills', 'user.employmentRecords'])
+                ->get();
             return response()->json(['status' => 'success', 'data' => $apps]);
         }
 
         // allow if user owns the hr company for this job
         $hr = \App\Models\HrCompany::where('user_id', $user->id)->first();
         if ($hr && $job->hr_company_id && $job->hr_company_id == $hr->id) {
-            $apps = JobApplication::where('job_listing_id', $job->id)->with('user')->get();
+            $apps = JobApplication::where('job_listing_id', $job->id)
+                ->with(['user' => function($query) {
+                    $query->select('id', 'name', 'email', 'phone', 'address', 'birthdate', 'avatar', 'barangay');
+                }, 'user.skills', 'user.employmentRecords'])
+                ->get();
             return response()->json(['status' => 'success', 'data' => $apps]);
         }
 

@@ -31,6 +31,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/admin/create-hr', [AuthController::class, 'createHrManager']);
         Route::post('/admin/create-secretary', [AuthController::class, 'createSecretary']);
         Route::get('/admin/stats', [DashboardController::class, 'adminStats']);
+        Route::get('/admin/activities', [DashboardController::class, 'adminActivities']);
         Route::get('/admin/accounts', [AuthController::class, 'allAccounts']);
         Route::patch('/admin/accounts/{id}', [AuthController::class, 'updateAccount']);
         Route::delete('/admin/accounts/{id}', [AuthController::class, 'deleteAccount']);

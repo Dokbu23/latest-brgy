@@ -113,8 +113,19 @@ class DashboardController extends Controller
     {
         // Get comprehensive admin dashboard stats
         $residents = User::where('role', 'resident')->count();
-        $employed = User::where('role', 'resident')->where('employment_status', 'employed')->count();
-        $seeking = User::where('role', 'resident')->where('employment_status', 'seeking')->count();
+        
+        // Get employed residents (those with currently_working employment records)
+        $employed = User::where('role', 'resident')
+            ->whereHas('employmentRecords', function($query) {
+                $query->where('currently_working', true);
+            })->count();
+        
+        // Get seeking residents (those without current employment)
+        $seeking = User::where('role', 'resident')
+            ->whereDoesntHave('employmentRecords', function($query) {
+                $query->where('currently_working', true);
+            })->count();
+        
         $jobs = JobListing::count();
         $applications = \App\Models\JobApplication::count();
         $documentRequests = DocumentRequest::count();
@@ -122,13 +133,73 @@ class DashboardController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => [
-                'residents' => $residents ?: 1247,
-                'employed' => $employed ?: 892,
-                'seeking' => $seeking ?: 355,
-                'jobs' => $jobs ?: 23,
-                'applications' => $applications ?: 45,
-                'document_requests' => $documentRequests ?: 18,
+                'residents' => $residents,
+                'employed' => $employed,
+                'seeking' => $seeking,
+                'jobs' => $jobs,
+                'applications' => $applications,
+                'document_requests' => $documentRequests,
             ]
+        ]);
+    }
+
+    public function adminActivities()
+    {
+        $activities = [];
+
+        // Get recent document requests
+        $recentDocuments = DocumentRequest::orderBy('created_at', 'desc')->limit(3)->get();
+        foreach ($recentDocuments as $doc) {
+            $activities[] = [
+                'id' => 'doc-' . $doc->id,
+                'icon' => '📝',
+                'title' => 'New Document Request',
+                'description' => $doc->document_type . ' request created',
+                'time' => $doc->created_at->diffForHumans(),
+                'timestamp' => $doc->created_at->timestamp,
+            ];
+        }
+
+        // Get recent job applications
+        $recentApplications = \App\Models\JobApplication::orderBy('created_at', 'desc')->limit(2)->get();
+        foreach ($recentApplications as $app) {
+            $activities[] = [
+                'id' => 'app-' . $app->id,
+                'icon' => '💼',
+                'title' => 'New Job Application',
+                'description' => 'Application submitted for ' . ($app->jobListing->title ?? 'a position'),
+                'time' => $app->created_at->diffForHumans(),
+                'timestamp' => $app->created_at->timestamp,
+            ];
+        }
+
+        // Get recently created users
+        $recentUsers = User::orderBy('created_at', 'desc')->limit(2)->get();
+        foreach ($recentUsers as $user) {
+            $activities[] = [
+                'id' => 'user-' . $user->id,
+                'icon' => '👤',
+                'title' => 'New User Registered',
+                'description' => $user->name . ' created an account',
+                'time' => $user->created_at->diffForHumans(),
+                'timestamp' => $user->created_at->timestamp,
+            ];
+        }
+
+        // Sort activities by timestamp
+        usort($activities, function($a, $b) {
+            return $b['timestamp'] - $a['timestamp'];
+        });
+
+        // Remove timestamp and limit to 5 most recent
+        $activities = array_slice($activities, 0, 5);
+        foreach ($activities as &$activity) {
+            unset($activity['timestamp']);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $activities
         ]);
     }
 }

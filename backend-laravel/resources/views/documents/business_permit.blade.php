@@ -13,7 +13,7 @@
 <body>
     <div class="header">
         <h1>B. Del Mundo</h1>
-        <h2>{{ $user->barangay ?? 'Unknown' }}</h2>
+
         <h3>BUSINESS PERMIT</h3>
     </div>
 
