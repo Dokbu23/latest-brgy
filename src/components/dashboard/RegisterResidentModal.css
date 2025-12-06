@@ -1,0 +1,62 @@
+.rrm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 14, 20, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.rrm-modal {
+  width: 760px;
+  max-width: 92%;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(70, 48, 120, 0.25);
+  overflow: hidden;
+  padding: 18px 20px;
+  border: 1px solid rgba(118, 75, 162, 0.08);
+}
+
+.rrm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.rrm-header h3 {
+  margin: 0;
+  color: #2d3748;
+}
+
+.rrm-close {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+  color: #4a5568;
+}
+
+.rrm-error {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  color: #9b2c2c;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.rrm-form { display: flex; flex-direction: column; gap: 10px; }
+.rrm-row { display: flex; gap: 10px; }
+.rrm-row input { flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
+
+.rrm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.rrm-btn { padding: 10px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; }
+.rrm-btn-secondary { background: #edf2f7; color: #2d3748; }
+.rrm-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 8px 18px rgba(118, 75, 162, 0.28);
+}
