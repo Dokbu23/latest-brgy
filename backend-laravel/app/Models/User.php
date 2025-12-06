@@ -23,11 +23,14 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'position',
         'barangay',
         'phone',
         'address',
         'avatar',
         'birthdate',
+        'free_requests_used',
+        'wallet_balance',
     ];
 
     /**

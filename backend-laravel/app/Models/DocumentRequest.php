@@ -19,6 +19,16 @@ class DocumentRequest extends Model
         'urgency',
         'assigned_to',
         'processed_at',
+        'is_paid',
+        'amount',
+        'download_count',
+        'max_downloads',
+        'expires_at',
+    ];
+
+    protected $casts = [
+        'expires_at' => 'datetime',
+        'is_paid' => 'boolean',
     ];
 
     public function user()

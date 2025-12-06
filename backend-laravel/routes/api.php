@@ -9,6 +9,10 @@ use App\Http\Controllers\Api\V1\JobListingController;
 use App\Http\Controllers\Api\V1\JobApplicationController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\DocumentRequestController;
+use App\Http\Controllers\Api\V1\AnalyticsController;
+use App\Http\Controllers\Api\V1\ResidentAnalyticsController;
+use App\Http\Controllers\Api\V1\SecretaryAnalyticsController;
+use App\Http\Controllers\Api\V1\BarangayAnalyticsController;
 use App\Http\Controllers\BarangayMeetingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +39,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/admin/accounts', [AuthController::class, 'allAccounts']);
         Route::patch('/admin/accounts/{id}', [AuthController::class, 'updateAccount']);
         Route::delete('/admin/accounts/{id}', [AuthController::class, 'deleteAccount']);
+        Route::get('/admin/analytics', [AnalyticsController::class, 'index']);
+        
+        // Resident Analytics
+        Route::get('/resident/analytics', [ResidentAnalyticsController::class, 'index']);
+        
+        // Secretary Analytics
+        Route::get('/secretary/analytics', [SecretaryAnalyticsController::class, 'index']);
+        
+        // Barangay Analytics
+        Route::get('/barangay/analytics', [BarangayAnalyticsController::class, 'index']);
         
         // Dashboard
         Route::get('/dashboard/statistics', [DashboardController::class, 'statistics']);

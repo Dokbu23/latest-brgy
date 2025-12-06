@@ -84,17 +84,47 @@ class DocumentRequestController extends BaseController
         $validated = $request->validate([
             'type' => 'required|string|max:191',
             'notes' => 'nullable|string',
-            'urgency' => 'nullable|in:low,normal,high,urgent',
-            'assigned_to' => 'nullable|exists:users,id',
         ]);
+
+        // Check if user has used their free request
+        $amount = 0;
+        $isPaid = true;
+        
+        if ($user->free_requests_used < 1) {
+            // First request is free
+            $amount = 0;
+            $user->increment('free_requests_used');
+        } else {
+            // Subsequent requests cost 50 pesos
+            $amount = 50.00;
+            
+            // Check wallet balance
+            if ($user->wallet_balance < $amount) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Insufficient wallet balance. Please top up your wallet.',
+                    'wallet_balance' => $user->wallet_balance,
+                    'required_amount' => $amount
+                ], 402);
+            }
+            
+            // Deduct from wallet
+            $user->decrement('wallet_balance', $amount);
+        }
+
+        // Set expiration to 30 days from approval
+        $expiresAt = Carbon::now()->addDays(30);
 
         $req = DocumentRequest::create([
             'user_id' => $user->id,
             'type' => $validated['type'],
             'notes' => $validated['notes'] ?? null,
-            'urgency' => $validated['urgency'] ?? 'normal',
-            'assigned_to' => $validated['assigned_to'] ?? null,
             'status' => 'pending',
+            'is_paid' => $isPaid,
+            'amount' => $amount,
+            'download_count' => 0,
+            'max_downloads' => 3,
+            'expires_at' => $expiresAt,
         ]);
 
         // Notify all secretaries about new document request
@@ -208,6 +238,21 @@ class DocumentRequestController extends BaseController
         // Check permission: owner or admin/secretary
         if ($req->user_id !== $user->id && !in_array($user->role, ['admin', 'secretary'])) {
             return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        // Check if document has expired
+        if ($req->expires_at && Carbon::parse($req->expires_at)->isPast()) {
+            return response()->json(['message' => 'Document has expired'], 403);
+        }
+
+        // Check download limit (only for residents, not admin/secretary)
+        if ($req->user_id === $user->id) {
+            if ($req->download_count >= $req->max_downloads) {
+                return response()->json(['message' => 'Download limit reached (3 downloads maximum)'], 403);
+            }
+            
+            // Increment download count
+            $req->increment('download_count');
         }
 
         $format = $request->query('format', 'pdf');
