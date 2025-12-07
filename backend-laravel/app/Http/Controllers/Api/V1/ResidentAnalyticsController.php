@@ -118,9 +118,6 @@ class ResidentAnalyticsController extends Controller
             'certificate_of_indigency' => 'Certificate of Indigency',
             'residency_cert' => 'Residency Certificate',
             'certificate_of_residency' => 'Residency Certificate',
-            'good_moral' => 'Good Moral',
-            'good_moral_certificate' => 'Good Moral',
-            'business_permit' => 'Business Permit',
             'other' => 'Other',
         ];
 

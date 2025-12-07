@@ -37,10 +37,7 @@ class SampleDocumentRequestsSeeder extends Seeder
             'barangay_clearance',
             'certificate_of_indigency',
             'certificate_of_residency',
-            'good_moral_certificate',
-            'business_permit',
             'barangay_id',
-            'certificate_of_employment',
         ];
 
         $statuses = ['pending', 'approved', 'rejected'];

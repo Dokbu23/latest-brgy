@@ -23,28 +23,14 @@ class DocumentRequestController extends BaseController
         'certificate_of_indigency' => 'certificate_of_indigency',
         'residency_cert' => 'certificate_of_residency',
         'certificate_of_residency' => 'certificate_of_residency',
-        'good_moral' => 'good_moral_certificate',
-        'good_moral_certificate' => 'good_moral_certificate',
-        'birth_cert' => 'birth_certificate',
-        'birth_certificate' => 'birth_certificate',
-        'death_cert' => 'death_certificate',
-        'death_certificate' => 'death_certificate',
-        'blotter_cert' => 'blotter_certificate',
-        'blotter_certificate' => 'blotter_certificate',
+        'clearance' => 'barangay_clearance',
+        'barangay_clearance' => 'barangay_clearance',
     ];
 
     protected array $documentTitleOverrides = [
         'barangay_clearance' => 'Barangay Clearance',
         'certificate_of_indigency' => 'Certificate of Indigency',
         'certificate_of_residency' => 'Certificate of Residency',
-        'good_moral_certificate' => 'Certificate of Good Moral Character',
-        'business_permit' => 'Business Permit',
-        'permit_fiesta' => 'Permit to Fiesta',
-        'permit_to_fiesta' => 'Permit to Fiesta',
-        'birth_certificate' => 'Birth Certificate',
-        'death_certificate' => 'Death Certificate',
-        'blotter_certificate' => 'Blotter Certificate',
-        'other' => 'Custom Document',
     ];
 
     public function __construct()
@@ -123,7 +109,7 @@ class DocumentRequestController extends BaseController
             'is_paid' => $isPaid,
             'amount' => $amount,
             'download_count' => 0,
-            'max_downloads' => 3,
+            'max_downloads' => 1,
             'expires_at' => $expiresAt,
         ]);
 
@@ -248,11 +234,18 @@ class DocumentRequestController extends BaseController
         // Check download limit (only for residents, not admin/secretary)
         if ($req->user_id === $user->id) {
             if ($req->download_count >= $req->max_downloads) {
-                return response()->json(['message' => 'Download limit reached (3 downloads maximum)'], 403);
+                return response()->json(['message' => "Download limit reached ({$req->max_downloads} downloads maximum)"], 403);
             }
             
             // Increment download count
             $req->increment('download_count');
+            $req->refresh();
+
+            // If we've reached or exceeded the max downloads, expire the document immediately
+            if ($req->download_count >= $req->max_downloads) {
+                $req->expires_at = now();
+                $req->save();
+            }
         }
 
         $format = $request->query('format', 'pdf');
@@ -283,12 +276,26 @@ class DocumentRequestController extends BaseController
     {
         $phpWord = new PhpWord();
         $section = $phpWord->addSection();
-        $title = $this->resolveDocumentTitle($req->type);
 
-        // Add content based on type
-        $section->addText('B. Del Mundo', ['bold' => true, 'size' => 14], ['alignment' => 'center']);
-        $section->addText('Barangay ' . ($data['user']->barangay ?? 'Unknown'), ['bold' => true, 'size' => 12], ['alignment' => 'center']);
-        $section->addText(strtoupper($title), ['bold' => true, 'size' => 16], ['alignment' => 'center']);
+        // Header with violet styling (simulated with text formatting)
+        $headerText = $section->addTextRun(['alignment' => 'center']);
+        $headerText->addText('Republic of the Philippines', ['bold' => true, 'size' => 12, 'color' => '8B5CF6']);
+        $section->addTextBreak(1);
+        $headerText = $section->addTextRun(['alignment' => 'center']);
+        $headerText->addText('Province of [Province]', ['bold' => true, 'size' => 12, 'color' => '8B5CF6']);
+        $section->addTextBreak(1);
+        $headerText = $section->addTextRun(['alignment' => 'center']);
+        $headerText->addText('Municipality of [Municipality]', ['bold' => true, 'size' => 12, 'color' => '8B5CF6']);
+        $section->addTextBreak(1);
+        $headerText = $section->addTextRun(['alignment' => 'center']);
+        $headerText->addText('Barangay B. Del Mundo', ['bold' => true, 'size' => 14, 'color' => '8B5CF6']);
+        $section->addTextBreak(1);
+        $headerText = $section->addTextRun(['alignment' => 'center']);
+        $headerText->addText('OFFICE OF THE BARANGAY CAPTAIN', ['bold' => true, 'size' => 11, 'color' => 'A855F7']);
+        $section->addTextBreak(2);
+
+        $title = $this->resolveDocumentTitle($req->type);
+        $section->addText(strtoupper($title), ['bold' => true, 'size' => 16, 'color' => '8B5CF6'], ['alignment' => 'center']);
         $section->addTextBreak(2);
 
         $content = $this->getDocumentContent($req, $data);
@@ -300,6 +307,17 @@ class DocumentRequestController extends BaseController
 
         $section->addText('___________________________', [], ['alignment' => 'center']);
         $section->addText('Barangay Captain', [], ['alignment' => 'center']);
+        $section->addTextBreak(2);
+
+        // Footer with violet styling
+        $footerText = $section->addTextRun(['alignment' => 'center']);
+        $footerText->addText('This document is issued by Barangay B. Del Mundo and is valid for [duration] from date of issuance.', ['size' => 9, 'color' => '8B5CF6']);
+        $section->addTextBreak(1);
+        $footerText = $section->addTextRun(['alignment' => 'center']);
+        $footerText->addText('For verification, contact Barangay Hall at [contact information]', ['size' => 9, 'color' => '8B5CF6']);
+        $section->addTextBreak(1);
+        $footerText = $section->addTextRun(['alignment' => 'center']);
+        $footerText->addText('Document ID: ' . $req->id . ' | Issued: ' . $data['issued_at'], ['size' => 9, 'color' => '8B5CF6']);
 
         $fileName = str_replace(' ', '_', strtolower($title)) . '.docx';
         $tempFile = tempnam(sys_get_temp_dir(), 'docx');
@@ -322,22 +340,9 @@ class DocumentRequestController extends BaseController
             case 'certificate_of_residency':
                 $birth = $user->birthdate ? 'born on ' . Carbon::parse($user->birthdate)->format('F j, Y') : '';
                 return "This is to certify that {$user->name}, of legal age, {$birth}, and a resident of {$user->address}, has been residing in this barangay for the required period.\n\nThis certificate is issued upon request.";
-            case 'business_permit':
-                return "This permit is granted to {$user->name}, owner of the business located at {$user->address}, to operate in this barangay.\n\nBusiness Type: {$notes}\n\nThis permit is valid for one year from the date of issuance.";
             case 'certificate_of_indigency':
                 $purpose = $req->notes ?: 'various government assistance programs';
                 return "This is to certify that {$user->name}, residing at {$user->address}, is an indigent resident of this barangay.\n\nThis certificate is issued for the purpose of {$purpose}.";
-            case 'good_moral_certificate':
-                return "This is to certify that {$user->name} is a resident in good standing of Barangay {$user->barangay} and is known to have exhibited good moral character.\n\nIssued upon request.";
-            case 'permit_fiesta':
-            case 'permit_to_fiesta':
-                return "This permit authorizes {$user->name} to conduct community festivities at {$user->address}.\n\nThe holder is expected to observe barangay ordinances and maintain peace and order.";
-            case 'birth_certificate':
-                return "This document records the birth of {$user->name}.\n\nRegistered address: {$user->address}.";
-            case 'death_certificate':
-                return "This document records the passing of {$user->name}.\n\nDetails: {$notes}.";
-            case 'blotter_certificate':
-                return "This certifies that {$user->name} has blotter record details as follows: {$notes}.";
             default:
                 return "{$title} issued to {$user->name}, residing at {$user->address}.\n\nAdditional Notes: {$notes}.";
         }

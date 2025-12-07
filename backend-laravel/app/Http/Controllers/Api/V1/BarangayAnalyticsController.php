@@ -127,10 +127,7 @@ class BarangayAnalyticsController extends Controller
                 'barangay_clearance' => 'Barangay Clearance',
                 'certificate_of_indigency' => 'Certificate of Indigency',
                 'certificate_of_residency' => 'Residency Certificate',
-                'good_moral_certificate' => 'Good Moral Certificate',
-                'business_permit' => 'Business Permit',
                 'barangay_id' => 'Barangay ID',
-                'certificate_of_employment' => 'Certificate of Employment',
                 'other' => 'Other'
             ];
 
@@ -260,11 +257,7 @@ class BarangayAnalyticsController extends Controller
             'certificate_of_indigency' => 'Certificate of Indigency',
             'residency_cert' => 'Residency Certificate',
             'certificate_of_residency' => 'Residency Certificate',
-            'good_moral' => 'Good Moral',
-            'good_moral_certificate' => 'Good Moral Certificate',
-            'business_permit' => 'Business Permit',
             'barangay_id' => 'Barangay ID',
-            'certificate_of_employment' => 'Certificate of Employment',
             'other' => 'Other',
         ];
 
